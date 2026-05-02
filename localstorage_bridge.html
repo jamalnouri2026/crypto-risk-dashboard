@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script>
+/*
+  LocalStorage ↔ Streamlit Bridge
+  ─────────────────────────────────
+  این کامپوننت به‌صورت مخفی لود می‌شه و:
+  1. موقع لود: داده رو از localStorage می‌خونه و به Streamlit می‌فرسته
+  2. موقع دریافت پیام از Streamlit: توی localStorage ذخیره می‌کنه
+*/
+
+const STORAGE_KEY = 'crypto_dashboard_weights';
+
+// ارسال داده‌های ذخیره‌شده به Streamlit هنگام لود اولیه
+function sendToStreamlit(data) {
+  window.parent.postMessage({
+    type: 'streamlit:setComponentValue',
+    value: data
+  }, '*');
+}
+
+// خواندن از localStorage در لود اولیه
+const stored = localStorage.getItem(STORAGE_KEY);
+if (stored) {
+  try {
+    sendToStreamlit(JSON.parse(stored));
+  } catch (e) {
+    sendToStreamlit(null);
+  }
+} else {
+  sendToStreamlit(null);
+}
+
+// دریافت دستور ذخیره از Streamlit
+window.addEventListener('message', function(event) {
+  if (event.data.type === 'SAVE_TO_STORAGE') {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(event.data.payload));
+  }
+  if (event.data.type === 'CLEAR_STORAGE') {
+    localStorage.removeItem(STORAGE_KEY);
+    sendToStreamlit(null);
+  }
+});
+</script>
+</body>
+</html>
